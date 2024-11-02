@@ -1,6 +1,3 @@
-# Data
-Download the dataset in this folder following the link to the dataset in the paper.
-
 # Running
 
 ```bash
