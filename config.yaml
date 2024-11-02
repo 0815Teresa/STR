@@ -1,0 +1,59 @@
+model: 'STR'
+data: '{}_st'
+dis_type: 'dtw'
+length: 'long'
+optimizer: 'Adam'
+init_lr: 0.001
+
+traj_num: 
+traj_size: 200
+
+seed: 2021
+max_nodes: 20
+max_depth: 7
+sample_num: 20
+alpha: 16
+train_data_range: 
+val_data_range: 
+num_workers: 2
+
+train_batch_size: 4
+eval_batch_size: 100
+matrix_cal_batch: 100
+epoch: 100
+
+dropout: 0.5
+in_features: 7 
+num_layers: 2
+
+d_word_vec: 16
+d_model: 16 
+d_inner: 64 
+n_layers: 2
+n_head: 1 
+d_k: 8 
+d_v: 8
+dropout: 0.1
+
+batch_norm: True
+layer_norm: False
+use_bias: False
+
+
+weight_decay: 0.0
+lr_reduce_factor: 0.5
+lr_schedule_patience: 10
+
+traj_path: 'data/processed_data/{}.pkl'
+stdis_matrix_path: 'data/features/tmp/{}_{}_st_distance_all_{}.pkl'
+
+model_best_wts_path: 'model/wts/{}_{}_{}_{}_wts_hr10'
+model_best_topAcc_path: 'model/wts/{}_{}_{}_{}_wts_topAcc.csv'
+embeddings_path: "model/vec/{}_{}_{}_{}_embeddings_vec" 
+
+
+x_range: 
+y_range: 
+z_range: 
+data_features: 
+
