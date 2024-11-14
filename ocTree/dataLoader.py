@@ -77,18 +77,13 @@ class TrajTokenDataLoader:
         traj_list_list, dis_list_list, idx, sample_index, sim_traj = map(list, zip(*samples))
         traj_feature_list_list = self._prepare(traj_list_list)
         sim_traj_norm = self._prepare(sim_traj)
-
         return traj_feature_list_list, dis_list_list, idx, sample_index, sim_traj_norm
 
     def _prepare(self, traj_l_l):
         traj_feature_list_list = []
-        for traj in traj_l_l:
-            tmp_traj = []
-            # tp[2] is the added time; latitude, longitude, time, even grid id, hierarchy of the leaf node where it is located, index of the leaf node where it is located at this level, hierarchy of the parent node, index of the parent node at this level
-            tmp_traj.append([[tp[0], tp[1], tp[2], tp[3], tp[4], tp[5], tp[6]] for tp in traj])
-            tmp_traj = self._normalize(tmp_traj)
-            traj_feature_list_list.append(tmp_traj)
-
+        for traj_l in traj_l_l:
+            traj_feature_list = [self._normalize(traj) for traj in traj_l]
+            traj_feature_list_list.append(traj_feature_list)
         return traj_feature_list_list
 
     def _normalize(self, traj):
