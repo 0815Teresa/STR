@@ -26,9 +26,28 @@ class ExpTrajDataPreprocessor(object):
     def save(self,data, outpath):
         file_processor = LoadSave()
         if self.withTime:
-            file_processor.save_data(data, "./data/processed_data/" +outpath)
+            file_processor.save_data(data, "../data/processed_data/" +outpath)
         else:
-            file_processor.save_data(data, "./data/processed_data/Spa" +outpath)
+            file_processor.save_data(data, "../data/processed_data/Spa" +outpath)
+    
+    def add_timestamp_to_polyline(self, row):
+        polyline = ast.literal_eval(row['POLYLINE'])
+        timestamp = row['TIMESTAMP']
+        polyline_with_timestamp = []
+        current_time = timestamp
+        
+        for point in polyline:
+            point.append(current_time)
+            polyline_with_timestamp.append(point)
+            current_time += 15
+        
+        return polyline_with_timestamp
+
+    def swap_columns(self, data):
+        for sublist in data:
+            for i in range(len(sublist)):
+                sublist[i][0], sublist[i][1] = sublist[i][1], sublist[i][0]
+        return data
             
     # input_path: Original trajectory folder path; output_path：Trajectory Save Path
     def _PortoTrajs(self, input_path, output_path):     
@@ -37,6 +56,7 @@ class ExpTrajDataPreprocessor(object):
             df = pd.read_csv(input_path, error_bad_lines=False, warn_bad_lines=True, engine='python')
             df = df[['TIMESTAMP', 'POLYLINE']]
             df['DATE'] = pd.to_datetime(df['TIMESTAMP'], unit='s')
+            df['POLYLINE_WITH_TIMESTAMP'] = df.apply(self.add_timestamp_to_polyline, axis=1)
             if self.withTime:
                 # (lat,lon,timestamp)
                 traj_df = df['POLYLINE_WITH_TIMESTAMP']
@@ -104,7 +124,7 @@ class ExpTrajDataPreprocessor(object):
 
     def _RomeTaxi(self, traj_path, output_path):
         trajs = []
-        df = pd.read_csv('data/raw_data/rome.txt', sep=';', header=None, names=['ID', 'timeStamp', 'point'])
+        df = pd.read_csv(traj_path, sep=';', header=None, names=['ID', 'timeStamp', 'point'])
         df['timeStamp'] = pd.to_datetime(df['timeStamp'], format='%Y-%m-%d %H:%M:%S.%f')
         df['date'] = df['timeStamp'].dt.date
         df['timeStamp'] = pd.to_datetime(df['timeStamp']).astype('int64')//1e9
@@ -183,11 +203,3 @@ def basic_lat_lon_report(trajs):
     print("lon range: [{} , {}] ".format(df[1].min(), df[1].max()))  
     print("t range: [{}, {}]".format(df[2].min(), df[2].max()))
     print("lan_mean, lan_std, lot_mean, lot_std, t_mean, t_std: [{},{},{},{},{},{}]".format(df[0].mean(), df[0].std(),df[1].mean(), df[1].std(), df[2].mean(), df[2].std())) 
-    
-
- 
-    
-
-
-
-
