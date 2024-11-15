@@ -202,18 +202,6 @@ class Encoder(nn.Module):
         return enc_output+enc_output2,
 
 
-
-def get_pad_mask(seq, pad_idx):
-    # (batch, seqlen) -> (batch, 1, seqlen) 
-    return (seq != pad_idx).unsqueeze(-2)
-
-def get_subsequent_mask(seq):
-    sz_b, len_s = seq.size()
-    subsequent_mask = (1 - torch.triu(
-        torch.ones((1, len_s, len_s), device=seq.device), diagonal=1)).bool()
-    return subsequent_mask
-
- 
 class STRmodel(nn.Module):
     def __init__(
             self, n_src_vocab, 
@@ -232,7 +220,7 @@ class STRmodel(nn.Module):
     def forward(self, src_seq, src_seq2):
         enc_output, *_ = self.encoder(src_seq, src_seq2, None)
 
-        return torch.mean(enc_output,dim=1)
+        return torch.mean(enc_output, dim=1)
 
 
 def pload(file_path):
@@ -267,19 +255,13 @@ class ExpSTRmodel(ExpConfig):
             self.embeding_loader = self._get_dataloader(flag="embed")
         else:
             self.log_writer = SummaryWriter(f"./runs/{self.config['data']}/{self.config['length']}/{self.config['model']}_{self.config['dis_type']}_{datetime.datetime.now()}/")
-
             print("[!] Build octree")
             self.octree = build_tree(pload(self.config["traj_path"])[:self.config["val_data_range"][1]], self.config["x_range"], self.config["y_range"], self.config["z_range"], self.config["max_nodes"], self.config["max_depth"])
-
             self.treeid_range, self.treeid_list_list = get_octree_feat(self.octree, self.config["traj_num"], self.config["traj_size"])
-
             self.merge_trajs_data = self._merge_data(self.trajs)
-
             self.nodes_num_all = self._compute_nodes_num()
             self.edgs_adj = self._compute_common_tps(self.nodes_num_all)
-
             self.train_loader = self._get_dataloader(flag="train")
-
             self.val_loader = self._get_dataloader(flag="val")
 
         self.model = self._build_model().to(self.device)
@@ -387,23 +369,12 @@ class ExpSTRmodel(ExpConfig):
         for data in tqdm(self.embeding_loader):
             traj_feature_list_list, dis_list_list, idx, sample_index, sim_trajs = data
             
-            max_length = self.config["traj_size"]
-            padded_traj_feature_list_list_tensor = [
-                torch.cat([tensor, torch.zeros(max_length - tensor.size(0), tensor.size(1))])
-                if tensor.size(0) < max_length else tensor
-                for tensor_list in traj_feature_list_list
-                for tensor in tensor_list
-            ]
+            traj_feature_list = [tensor for tensor_list in traj_feature_list_list for tensor in tensor_list]
             sim_traj_list = [torch.stack(sim_traj) for sim_traj in sim_trajs]
-            sim_traj_padding_list = [
-                torch.cat([tensor, torch.zeros(max_length - tensor.size(0), tensor.size(1))]).to(self.device)
-                if tensor.size(0) < max_length else tensor
-                for tensor in sim_traj_list
-            ]
 
             with torch.set_grad_enabled(True):
-                for traj_feature_list,sim_traj in zip(padded_traj_feature_list_list_tensor, sim_traj_padding_list):
-                    vectors = self.model(traj_feature_list.unsqueeze(dim=0).to(self.device), sim_traj.unsqueeze(dim=0)).squeeze()
+                for traj_feature,sim_traj in zip(traj_feature_list, sim_traj_list):
+                    vectors = self.model(traj_feature.unsqueeze(dim=0).to(self.device), sim_traj.unsqueeze(dim=0)).squeeze()
                     all_vectors.append(vectors)
                     
         all_vectors = torch.stack(all_vectors).squeeze()
@@ -426,23 +397,12 @@ class ExpSTRmodel(ExpConfig):
         for data in self.val_loader:
             traj_feature_list_list, dis_list_list, idx, sample_index, sim_trajs = data
 
-            max_length = self.config["traj_size"]
-            padded_traj_feature_list_list_tensor = [
-                torch.cat([tensor, torch.zeros(max_length - tensor.size(0), tensor.size(1))])
-                if tensor.size(0) < max_length else tensor
-                for tensor_list in traj_feature_list_list
-                for tensor in tensor_list
-            ]
+            traj_feature_list = [tensor for tensor_list in traj_feature_list_list for tensor in tensor_list]
             sim_traj_list = [torch.stack(sim_traj) for sim_traj in sim_trajs]
-            sim_traj_padding_list = [
-                torch.cat([tensor, torch.zeros(max_length - tensor.size(0), tensor.size(1))]).to(self.device)
-                if tensor.size(0) < max_length else tensor
-                for tensor in sim_traj_list
-            ]
-
+            
             with torch.set_grad_enabled(True):
-                for traj_feature_list,sim_traj in zip(padded_traj_feature_list_list_tensor, sim_traj_padding_list):
-                    vectors = self.model(traj_feature_list.unsqueeze(dim=0).to(self.device), sim_traj.unsqueeze(dim=0)).squeeze()
+                for traj_feature,sim_traj in zip(traj_feature_list, sim_traj_list):
+                    vectors = self.model(traj_feature.unsqueeze(dim=0).to(self.device), sim_traj.unsqueeze(dim=0)).squeeze()
                     all_vectors.append(vectors)
 
         all_vectors = torch.stack(all_vectors).squeeze()
@@ -485,19 +445,11 @@ class ExpSTRmodel(ExpConfig):
                 for traj_feature_list,dis_list,idx_in,sample_index_in,sim_traj in zip(traj_feature_list_list,dis_list_list,idx,sample_index,sim_trajs):
                     vectors_all = []
 
-                    max_length = self.config["traj_size"]
-                    padded_traj_list_list_tensor = [
-                        torch.cat([tensor, torch.zeros(max_length - tensor.size(0), tensor.size(1))])
-                        if tensor.size(0) < max_length else tensor
-                        for tensor in traj_feature_list
-                    ]
-                    
                     sim_traj_tensor = torch.stack(sim_traj)
-                    sim_traj_tensor = torch.cat([sim_traj_tensor, torch.zeros(max_length - sim_traj_tensor.size(0), sim_traj_tensor.size(1))]).to(self.device)
-
+                    
                     with torch.set_grad_enabled(True):
-                        for traj_feature_list_tensor in padded_traj_list_list_tensor:
-                            vectors = self.model(traj_feature_list_tensor.unsqueeze(dim=0).to(self.device), sim_traj_tensor).squeeze()
+                        for traj_feature_list_tensor in traj_feature_list:
+                            vectors = self.model(traj_feature_list_tensor.unsqueeze(dim=0).to(self.device), sim_traj_tensor.unsqueeze(dim=0)).squeeze()
                             vectors_all.append(vectors)
 
                     test_time = time.time()
