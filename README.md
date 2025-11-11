@@ -1,5 +1,7 @@
 # [2025INFFUS]STR
 STR: Spatio-temporal trajectory representation learning with dual-focus encoder for whole trajectory similarity computation
+
+
 📄 [Link to the paper](https://www.sciencedirect.com/science/article/pii/S1566253525003045)
 
 ## Conda Dependencies and Required Packages
