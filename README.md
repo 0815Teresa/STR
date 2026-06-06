@@ -24,7 +24,7 @@ The relevant parameters can be modified in the config.yaml file.
 If you find anything in this repository useful to your research, please cite our paper :) We sincerely appreciate it.
 ```
 @article{li2025str,
-  title={STR: Spatio-temporal trajectory representation learning with dual-focus encoder for whole trajectory similarity computation},
+  title={{STR}: Spatio-temporal trajectory representation learning with dual-focus encoder for whole trajectory similarity computation},
   author={Li, Mengqiu and Niu, Xinzheng and Zhu, Jiahui and Fournier-Viger, Philippe and Wu, Youxi},
   journal={Information Fusion},
   pages={103231},
